@@ -1,0 +1,8 @@
+{
+  "name": "Remix Plaska",
+  "description": "Personalized Task Orchestration System berbasis Bento Grid untuk siswa SMA dengan AI Gemini",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
