@@ -46,7 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           <div className="w-9 h-9 rounded-xl overflow-hidden bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-400 shadow-sm">
-            <img src="/logo-task-planner.svg" alt="Plaska Logo" className="w-full h-full object-cover" />
+            <img src={`${import.meta.env.BASE_URL}logo-task-planner.svg`} alt="Plaska Logo" className="w-full h-full object-cover" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
