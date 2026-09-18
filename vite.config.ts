@@ -4,8 +4,13 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
+  // Determine base URL dynamically based on GitHub Actions environment or relative path
+  const repoName = process.env.GITHUB_REPOSITORY
+    ? `/${process.env.GITHUB_REPOSITORY.split('/')[1]}/`
+    : './';
+
   return {
-    base: './',
+    base: process.env.VITE_BASE_PATH || repoName,
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
