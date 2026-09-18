@@ -4,14 +4,18 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
-  // Determine base URL dynamically based on GitHub Actions environment or relative path
+  // Determine base URL dynamically based on GitHub Actions environment or repo name fallback
   const repoName = process.env.GITHUB_REPOSITORY
     ? `/${process.env.GITHUB_REPOSITORY.split('/')[1]}/`
-    : './';
+    : '/PLASKA-Smart-Task-Study-Orchestrator/';
 
   return {
     base: process.env.VITE_BASE_PATH || repoName,
     plugins: [react(), tailwindcss()],
+    build: {
+      target: 'esnext',
+      outDir: 'dist',
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
