@@ -66,17 +66,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Clock className="w-3.5 h-3.5 text-teal-400" />
             <span className="hidden sm:inline">Pengaturan Waktu</span>
           </button>
-
-          <button
-            id="btn-user-auth"
-            onClick={onOpenAuthModal}
-            className="flex items-center space-x-2 px-3 py-1.5 text-xs font-bold text-slate-950 bg-teal-400 hover:bg-teal-300 rounded-xl shadow-md transition-all active:scale-95"
-          >
-            <User className="w-3.5 h-3.5" />
-            <span className="truncate max-w-[120px]">
-              {userProfile.name ? userProfile.name.split(' ')[0] : 'Masuk Akun'}
-            </span>
-          </button>
         </div>
       </div>
 

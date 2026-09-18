@@ -1,3 +1,4 @@
+// force re-deploy after repo rename
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
@@ -10,7 +11,7 @@ export default defineConfig(() => {
     : '/PLASKA-Smart-Task-Study-Orchestrator/';
 
   return {
-    base: process.env.VITE_BASE_PATH || repoName,
+    base: process.env.VITE_BASE_PATH || repoName || '/PLASKA-Smart-Task-Study-Orchestrator/',
     plugins: [react(), tailwindcss()],
     build: {
       target: 'esnext',
