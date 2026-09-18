@@ -22,6 +22,7 @@ import {
   OneTimeEvent,
 } from './types';
 import { calculateSchedule, getISODateOnly, sanitizeSubtaskAllocation, sanitizeAllTasksSchedule } from './utils/scheduler';
+import { runLocalDecomposition } from './utils/localDecomposition';
 
 export default function App() {
   // Backend and environment status
@@ -116,6 +117,23 @@ export default function App() {
     fetchTasks();
   }, []);
 
+  // Sync tasks and profile to localStorage for static hosting persistence
+  useEffect(() => {
+    if (tasks.length > 0) {
+      try {
+        localStorage.setItem('plaska_tasks', JSON.stringify(tasks));
+      } catch (e) {}
+    }
+  }, [tasks]);
+
+  useEffect(() => {
+    if (userProfile.id || userProfile.name || userProfile.school_name) {
+      try {
+        localStorage.setItem('plaska_user_profile', JSON.stringify(userProfile));
+      } catch (e) {}
+    }
+  }, [userProfile]);
+
   // Safe JSON parser helper to prevent Unexpected token '<' HTML response crashes
   const safeJson = async (res: Response) => {
     const text = await res.text();
@@ -149,9 +167,21 @@ export default function App() {
       if (data.success && data.profile) {
         setUserProfile(data.profile);
         setTasks((prevTasks) => sanitizeAllTasksSchedule(prevTasks, data.profile));
+        try {
+          localStorage.setItem('plaska_user_profile', JSON.stringify(data.profile));
+        } catch (e) {}
+        return;
       }
     } catch (err) {
-      console.warn('Profile fetch failed:', err);
+      console.warn('Profile fetch failed, trying localStorage:', err);
+    }
+    const saved = localStorage.getItem('plaska_user_profile');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setUserProfile(parsed);
+        setTasks((prevTasks) => sanitizeAllTasksSchedule(prevTasks, parsed));
+      } catch (e) {}
     }
   };
 
@@ -162,9 +192,21 @@ export default function App() {
       if (data.success && data.tasks) {
         const sanitized = sanitizeAllTasksSchedule(data.tasks, userProfile);
         setTasks(sanitized);
+        try {
+          localStorage.setItem('plaska_tasks', JSON.stringify(sanitized));
+        } catch (e) {}
+        return;
       }
     } catch (err) {
-      console.warn('Tasks fetch failed:', err);
+      console.warn('Tasks fetch failed, trying localStorage:', err);
+    }
+    const saved = localStorage.getItem('plaska_tasks');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const sanitized = sanitizeAllTasksSchedule(parsed, userProfile);
+        setTasks(sanitized);
+      } catch (e) {}
     }
   };
 
@@ -192,30 +234,51 @@ export default function App() {
     });
 
     try {
-      let res = await fetch('/api/decompose', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(taskInput),
-      });
+      let resultData: DecompositionResult | null = null;
 
-      let data = await safeJson(res);
-
-      if (!res.ok || !data.success) {
-        // Fallback to local decomposition in background seamlessly
-        const localRes = await fetch('/api/decompose/local', {
+      try {
+        const res = await fetch('/api/decompose', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(taskInput),
         });
-        const localData = await safeJson(localRes);
-        if (localData.success && localData.result) {
-          data = localData;
-        } else {
-          throw new Error(data.error || 'Gagal mendekomposisi tugas.');
+
+        const data = await safeJson(res);
+
+        if (res.ok && data.success && data.result) {
+          resultData = data.result;
+        }
+      } catch (e) {
+        console.warn('API decompose request failed or running static:', e);
+      }
+
+      if (!resultData) {
+        try {
+          const localRes = await fetch('/api/decompose/local', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(taskInput),
+          });
+          const localData = await safeJson(localRes);
+          if (localData.success && localData.result) {
+            resultData = localData.result;
+          }
+        } catch (e) {
+          console.warn('Local API decompose failed, executing browser client decomposition:', e);
         }
       }
 
-      await finalizeTaskCreation(taskInput, data.result);
+      // If backend API is not present (e.g. GitHub Pages static hosting), use browser local decomposition
+      if (!resultData) {
+        resultData = runLocalDecomposition(
+          taskInput.taskName,
+          taskInput.subject,
+          taskInput.description,
+          taskInput.deadline
+        );
+      }
+
+      await finalizeTaskCreation(taskInput, resultData);
 
       // 4. Update toast to success with task name context
       setBackgroundToast({
